@@ -102,14 +102,17 @@ systemctl restart systemd-resolved
 # 关闭SELinux
 sudo setenforce 0 # 临时禁用, 重启变回
 sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config # 禁用
+sleep 4
 
 # SWAP分区
 #sudo swapoff -a
 #sed -i '/^\/.*swap/s/^/#/' /etc/fstab
 #sudo mount -a
 cat /etc/fstab
+sleep 4
+
 sudo blkid | grep swap
-sleep 1
+sleep 4
 
 # 转发IPv4并让iptables看到桥接的流量
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
@@ -119,7 +122,6 @@ EOF
 
 sudo modprobe overlay
 sudo modprobe br_netfilter
-sleep 1
 
 # sysctl params required by setup, params persist across reboots
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
@@ -127,14 +129,16 @@ net.bridge.bridge-nf-call-iptables  = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 net.ipv4.ip_forward                 = 1
 EOF
+sleep 4
 
 # Apply sysctl params without reboot
 sudo sysctl --system
 
 # 通过运行以下命令验证是否加载了`br_netfilter`，`overlay`模块：
+ehco "通过运行以下命令验证是否加载了`br_netfilter`，`overlay`模块"
 lsmod | grep br_netfilter
 lsmod | grep overlay
-sleep 1
+sleep 4
 
 # IPVS
 apt install ipset ipvsadm -y
@@ -150,21 +154,20 @@ EOF
 systemctl restart systemd-modules-load.service
 
 lsmod | grep -e ip_vs -e nf_conntrack
-sleep 1
-
 cut -f1 -d " "  /proc/modules | grep -e ip_vs -e nf_conntrack
-sleep 1
+sleep 4
 
 echo "/etc/sysctl.d/k8s.conf:"
 cat /etc/sysctl.d/k8s.conf
-sleep 1
+sleep 4
 
 echo "/etc/modules-load.d/k8s.conf:"
 cat /etc/modules-load.d/k8s.conf
-sleep 1
+sleep 4
 
-echo "blkid | grep swap:"
+echo "blkid | grep swap: 为空就正常"
 sudo blkid | grep swap
+sleep 4
 
 lsmod | grep br_netfilter
 lsmod | grep overlay

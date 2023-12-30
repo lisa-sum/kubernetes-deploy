@@ -41,8 +41,10 @@ systemctl start containerd
 systemctl enable containerd
 #systemctl status containerd
 
+echo "正在生成containerd的文件"
 mkdir -p /etc/containerd/
 containerd config default | tee /etc/containerd/config.toml
+sleep 4
 
 # 所有节点均需安装与配置, 根据实际需求, 推荐Kubernetes安装v1.24版本以上使用containerd. 本教程只使用containerd
 cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
