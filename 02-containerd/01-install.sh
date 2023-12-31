@@ -66,8 +66,11 @@ EOF
 sudo sysctl --system
 
 # 配置文件默认在`/etc/containerd/config.toml` 这里仅修改两处配置, 读者可以修改自己想要的配置
+# 替换为国内镜像, 国内服务器请使用
 sed -i 's#registry.k8s.io/pause:3.8#registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9#g' /etc/containerd/config.toml
 
+# 当 systemd 是选定的初始化系统时, 应当选择SystemdCgroup = true, 否则不需要修改
+# 参考: https://kubernetes.io/zh-cn/docs/setup/production-environment/container-runtimes/#containerd-systemd
 sed -i 's#SystemdCgroup = false#SystemdCgroup = true#g' /etc/containerd/config.toml
 
 systemctl restart containerd

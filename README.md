@@ -6,7 +6,7 @@
 ## 注意事项
 1. 你需要查看shell的内容, 里面大多包含注释和注意事项
 2. 该仓库的脚本不适合用于生产环境的部署, 尽管这些脚本经过本人验证
-3. 该项目还不太成熟, 未对shell脚本进行更多的健壮性校验, 仅适合尝鲜
+3. 该项目未对shell脚本进行更多的健壮性校验
 
 ## 使用
 
@@ -21,4 +21,4 @@
 ## 资料
 1. https://juejin.cn/post/7292041370893778983
 2. https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/
-2. https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
+3. https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl

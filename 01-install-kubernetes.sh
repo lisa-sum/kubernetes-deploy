@@ -87,6 +87,9 @@ else
   cp kubelet.service /etc/systemd/system/kubelet.service
 fi
 
+# kubeadm 包自带了关于 systemd 如何运行 kubelet 的配置文件。 请注意 kubeadm 客户端命令行工具永远不会修改这份 systemd 配置文件。 这份 systemd 配置文件属于 kubeadm DEB/RPM 包
+# https://kubernetes.io/zh-cn/docs/reference/setup-tools/kubeadm/kubeadm-init/#kubelet-drop-in
+
 # 获取配置文件内容并修改该文件的内容, 把kubelet二进制文件的路径替换为用户定义的路径
 # 并输出到 /etc/systemd/system/kubelet.service.d/10-kubeadm.conf 文件中
 sudo mkdir -p /etc/systemd/system/kubelet.service.d
@@ -179,69 +182,136 @@ ls /run/containerd/
 # 初始化集群
 cat > kubeadm-init-conf.yaml <<EOF
 apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
 bootstrapTokens:
   - groups:
-      - system:bootstrappers:kubeadm:default-node-token # 指定用于节点引导的安全组
-    token: abcdef.0123456789abcdef # 引导令牌，用于节点加入集群时的验证
+      # 指定用于节点引导的安全组
+      - system:bootstrappers:kubeadm:default-node-token
+    token: "9a08jv.c0izixklcxtmnze7"
     ttl: 24h0m0s # 令牌的有效期限
     usages:
       - signing # 用于签名请求
       - authentication # 用于身份验证
-kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress: 192.168.2.152 # masterIP 主节点用于广播的地址
-  bindPort: 6443 # Kubernetes API 服务器监听的端口
+  # masterIP 主节点用于广播的地址
+  advertiseAddress: 192.168.2.152
+  # Kubernetes API 服务器监听的端口
+  bindPort: 6443
 nodeRegistration:
-  kubeletExtraArgs:
-    node-ip: 192.168.2.152 # 指定本机的ip地址,用于kubelet向master注册,同advertiseAddress kubelet 使用的节点 IP 地址
-  criSocket: unix:///var/run/containerd/containerd.sock # CRI（容器运行时接口）的通信 socket
-  imagePullPolicy: IfNotPresent  # 镜像拉取策略
+  name: "master-node-152" # 该控制节点的名称, 也就是出现在kubectl get no的名称
+  # CRI（容器运行时接口）的通信 socket 用来读取容器运行时的信息。 此信息会被以注解的方式添加到 Node API 对象至上，用于后续用途。
+  criSocket: unix:///var/run/containerd/containerd.sock
+  # 镜像拉取策略。 这两个字段的值必须是 "Always"、"Never" 或 "IfNotPresent" 之一。 默认值是 "IfNotPresent"，也是添加此字段之前的默认行为
+  imagePullPolicy: IfNotPresent
+  # 定 Node API 对象被注册时要附带的污点。 若未设置此字段（即字段值为 null），默认为控制平面节点添加控制平面污点。 如果你不想污染你的控制平面节点，可以将此字段设置为空列表
   taints: null
+  # 提供一组在当前节点被注册时可以忽略掉的预检错误。 例如：IsPrevilegedUser,Swap。 取值 all 忽略所有检查的错误。
+  #ignorePreflightErrors:
+  #  - IsPrivilegedUser
+skipPhases: # 是命令执行过程中要略过的阶段（Phases）。 通过执行命令 kubeadm init --help 可以获得阶段的列表。 参数标志 "--skip-phases" 优先于此字段的设置
+  - addon/kube-proxy # 忽略kube-proxy, 许多CNI网络插件都可以代替kube-proxy的功能, 此时可以省略, 除非你真的很懂, 否则不要跳过
 ---
 apiServer:
+  # certSANs 设置 API 服务器签署证书所用的额外主题替代名（Subject Alternative Name，SAN）。
   certSANs:
-    # 这里需要包含负载均衡、所有master节点的hostname和ip
+    # 集群中各个节点的 IP 地址、域名、负载均衡、或者集群的公共访问地址作为 certSANs 字段的值
+    - 192.168.2.152
     - "master-node-152"
+    - 192.168.2.155
     - "worker-node-155"
+    - 192.168.2.160
     - "worker-node-160"
+    - 192.168.2.100
     - "worker-node-100"
+    - 192.168.2.101
     - "worker-node-101"
+    - 192.168.2.102
     - "worker-node-102"
+    - "kubernetes"
+    - "kubernetes.default"
+    - "kubernetes.default.svc"
+    - "kubernetes.default.svc.cluster.local"
   extraArgs:
-    authorization-mode: Node,RBAC # API 服务器的授权模式
-  timeoutForControlPlane: 4m0s # 控制平面的超时时间
+    # API 服务器的授权模式
+    authorization-mode: Node,RBAC
+#  extraVolumes:
+#    - name: "some-volume"
+#      hostPath: "/etc/some-path"
+#      mountPath: "/etc/some-pod-path"
+#      readOnly: false
+#      pathType: File
+  # 控制平面的超时时间
+  timeoutForControlPlane: 1m0s
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
-kubernetesVersion: 1.29.0 # 版本信息
-certificatesDir: /etc/kubernetes/pki # 证书目录路径
+# 版本信息
+kubernetesVersion: 1.29.0
+# 证书目录路径
+certificatesDir: /etc/kubernetes/pki
+# 集群名称。
 clusterName: kubernetes
-controllerManager: {} # 控制器管理器配置
-dns: {} # DNS 配置
+# 控制器管理器配置
+controllerManager: {}
+# DNS 配置
+dns: {}
+# etcd 数据库的配置。例如使用这个部分可以定制本地 etcd 或者配置 API 服务器 使用一个外部的 etcd 集群。
 etcd:
   local:
-    dataDir: /var/lib/etcd # etcd 数据存储目录
+    # etcd 数据存储目录
+    dataDir: /var/lib/etcd
+#    imageRepository: "registry.k8s.io"
+#    imageTag: "3.2.24"
+#    extraArgs:
+#      listen-client-urls: "http://10.100.0.1:2379"
+#    serverCertSANs:
+#      - "ec2-10-100-0-1.compute-1.amazonaws.com"
+#    peerCertSANs:
+#      - "10.100.0.1"
+# external:
+#   endpoints:
+#   - "10.100.0.1:2379"
+#   - "10.100.0.2:2379"
+#   caFile: "/etcd/kubernetes/pki/etcd/etcd-ca.crt"
+#   certFile: "/etcd/kubernetes/pki/etcd/etcd.crt"
+#   keyFile: "/etcd/kubernetes/pki/etcd/etcd.key"
 imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers # 镜像源
-controlPlaneEndpoint: master-node-152:6443 # 负载均衡地址或者master的主机
-
+# 为控制面设置一个稳定的 IP 地址或 DNS 名称。
+# 取值可以是一个合法的 IP 地址或者 RFC-1123 形式的 DNS 子域名，二者均可以带一个 可选的 TCP 端口号。
+# 如果 controlPlaneEndpoint 未设置，则使用 advertiseAddress + bindPort。 如果设置了 controlPlaneEndpoint，但未指定 TCP 端口号，则使用 bindPort。
+# 可能的用法有：
+# 在一个包含不止一个控制面实例的集群中，该字段应该设置为放置在控制面 实例之前的外部负载均衡器的地址。
+# 在带有强制性节点回收的环境中，controlPlaneEndpoint 可以用来 为控制面设置一个稳定的 DNS。
+# 负载均衡地址或者master的主机
+controlPlaneEndpoint: "192.168.2.152:6443"
+# 其中包含集群的网络拓扑配置。使用这一部分可以定制 Pod 的 子网或者 Service 的子网。
 networking:
+  # Kubernetes 服务所使用的的 DNS 域名。 默认值为 "cluster.local"。
   dnsDomain: cluster.local
-  podSubnet: 10.244.0.0/16 # Pod 网络子网
-  serviceSubnet: 10.96.0.0/12 # 服务网络子网
-scheduler: {} # 调度器配置
+  # 为 Pod 所使用的子网
+  podSubnet: 10.244.0.0/16
+  # Kubernetes 服务所使用的的子网。 默认值为 "10.96.0.0/12"。
+  serviceSubnet: 10.96.0.0/12
+# 调度器配置
+scheduler: {}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
-healthzBindAddress: 127.0.0.1 # 健康检查绑定地址, 推荐默认值. 荐将此地址设置为 127.0.0.1（即本地回环地址），因为这样可以限制健康检查接口只在本地机器上可用，增加安全性。如果设置为一个外部地址，则此接口在网络上可见，可能会暴露给不必要的安全风险
-healthzPort: 10248 # 健康检查绑定端口
 kind: KubeletConfiguration
-cgroupDriver: systemd # 控制组驱动, 可选为systemd, cgroupfs, 推荐systemd
-failSwapOn: true # 当存在 swap 时是否失败
-maxPods: 200 # 最大 Pod 数量, 默认值为110
-rotateCertificates: false #启用客户端证书轮换。Kubelet 将从 certificates.k8s.io API 请求新证书。这需要审批者批准证书签名请求。默认值：false
-staticPodPath: /etc/kubernetes/manifests
-evictionHard: # 信号名称与定义硬逐出阈值的数量的映射。例如： {"memory.available": "300Mi"} .若要显式禁用，请在任意资源上传递 0% 或 100% 阈值。默认值：memory.available： “100Mi” nodefs.available： “10%” nodefs.inodesFree： “5%” imagefs.available： “15%”
-  imagefs.available: "10%"
-  memory.available: "2Gi"
-  nodefs.available: "5%"
+address: "192.168.2.152"
+port: 20250
+serializeImagePulls: false
+# kubelet 将在以下情况之一驱逐 Pod:
+evictionHard:
+  # 可用内存低于设定的值时
+  memory.available:  "100Mi"
+  nodefs.available:  "10%"
+  # 当节点主文件系统的已使用 inode超过设定的值时
+  nodefs.inodesFree: "5%"
+  # 当镜像文件系统的可用空间小于
+  imagefs.available: "15%"
+# 是 kubelet 用来操控宿主系统上控制组（CGroup） 的驱动程序（cgroupfs 或 systemd）
+# 当 systemd 是初始化系统时， 不 推荐使用 cgroupfs 驱动，因为 systemd 期望系统上只有一个 cgroup 管理器。
+# 此外，如果你使用 cgroup v2， 则使用systemd值
+cgroupDriver: "systemd"
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -253,5 +323,23 @@ kubeadm init \
 --config=kubeadm-init-conf.yaml \
 --skip-phases addon/kube-proxy \
 --v=5
+
+# 或者自动化: https://kubernetes.io/zh-cn/docs/reference/setup-tools/kubeadm/kubeadm-init/#automating-kubeadm
+kubeadm token generate
+kubeadm certs certificate-key
+
+cat > kubeadm-join.yaml <<EOF
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    token: "9a08jv.c0izixklcxtmnze7"
+    apiServerEndpoint: "192.168.2.152:6443"
+    caCertHashes:
+      - "sha256:e462571f0388602594f1abdbee04f8834e5d967008cde03d67865fbe0bd6dfde"
+nodeRegistration:
+  name: "worker-node-155"
+  criSocket: "/var/run/containerd/containerd.sock"
+EOF
 
 set +x

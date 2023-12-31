@@ -137,7 +137,8 @@ helm install cilium cilium/cilium --version 1.14.5 \
 
 # P9s Ga
 # https://docs.cilium.io/en/stable/observability/grafana/
-helm install cilium cilium/cilium --version 1.14.5 \
+helm install cilium cilium/cilium \
+--version 1.14.5 \
 --namespace kube-system \
 --set prometheus.enabled=true \
 --set operator.prometheus.enabled=true \
@@ -155,6 +156,7 @@ helm install cilium cilium/cilium --version 1.14.5 \
 helm install cilium cilium/cilium \
 --version 1.14.5 \
 --namespace kube-system \
+--set kubeProxyReplacement=true \
 --set annotateK8sNode=true \
 --set tunnel=disabled \
 --set routingMode=native \
@@ -167,7 +169,9 @@ helm install cilium cilium/cilium \
 --set ipam.operator.clusterPoolIPv4PodCIDRList=10.244.0.0/16 \
 --set ipam.operator.clusterPoolIPv4MaskSize=24 \
 --set k8sServiceHost=master-node-152 \
---set k8sServicePort=6443
+--set k8sServicePort=6443 \
+--set hubble.relay.enabled=true \
+--set hubble.ui.enabled=true
 
 #helm install cilium cilium/cilium \
 #--version 1.14.5 \
@@ -179,8 +183,8 @@ helm install cilium cilium/cilium \
 #--set ipam.Operator.clusterPoolIPv4PodCIDRList=["10.244.0.0/16"] \
 #--set ipam.Operator.ClusterPoolIPv4MaskSize=24 \
 #--set hubble.Enabled=true  \
-#--set hubble.Relay.Enabled=true  \
-#--set hubble.Ui.Enabled=true  \
+#--set hubble.relay.enabled=true \
+#--set hubble.ui.enabled=true
 #--set hubble.Metrics.Enabled="{dns, drop, tcp, flow, port-distribution, icmp, http}"  \
 #--set annotateK8sNode=true \
 #--set sctp.enabled=true \
