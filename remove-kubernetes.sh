@@ -21,16 +21,19 @@ systemctl stop kubeadm
 systemctl stop kubelet
 systemctl stop kubectl
 
+rm -rf /etc/sysctl.d/k8s.conf
+rm -rf /etc/crictl.yaml
+
+# configfile
+rm -rf /etc/modules-load.d/k8s.conf
+rm -rf /etc/modules-load.d/ipvs.conf
+
 # service
 rm -rf /etc/systemd/system/kube*
 
 # sock
-rm -rf /var/run/containerd/*
 rm -rf /var/run/kubeadm/*
 rm -rf /var/run/kubelet/*
-rm -rf /var/run/containerd/*
-rm -rf /run/containerd/*
-rm -rf /run/containerd/*
 rm -rf /run/kubeadm/*
 rm -rf /run/kubelet/*
 
@@ -44,7 +47,8 @@ sudo apt-mark unhold kubeadm
 sudo apt-mark unhold kubelet
 sudo apt-mark unhold kubectl
 sudo apt remove -y kubeadm kubelet kubectl
-sudo apt remove -y containerd
+
+rm -rf /etc/apt/keyrings/*
 
 # 自动删除不需要的依赖项：
 #sudo apt autoremove -y
@@ -57,12 +61,9 @@ sudo apt remove -y containerd
 # 重置节点
 kubeadm reset -f
 
-# 清理IPVS规则
-sudo ipvsadm -C
-
 # 删除网卡
-#apt install net-tools # Ubuntu
-#yum install net-tools # RedHat
+apt install net-tools # Ubuntu
+yum install net-tools # RedHat
 
 # flannel
 ifconfig flannel.1 down
@@ -86,24 +87,17 @@ ifconfig cilium_vxlan down
 ip link delete cilium_vxlan
 
 # 清理iptables规则：
-sudo iptables -F
-sudo iptables -X
-sudo iptables -t nat -F
-sudo iptables -t nat -X
-sudo iptables -t mangle -F
-sudo iptables -t mangle -X
-sudo iptables -P INPUT ACCEPT
-sudo iptables -P FORWARD ACCEPT
-sudo iptables -P OUTPUT ACCEPT
+sudo iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+
+# 清理IPVS规则
+sudo ipvsadm -C
 
 sudo rm -rf /etc/kubernetes/ # Kubernetes的安装位置
 
 # 删除Kubernetes的相关依赖
 sudo rm -rf \
 /var/lib/cni \
-/var/lib/containerd  \
-/var/lib/docker  \
-/var/lib/etcd   \
+/var/lib/etcd \
 /var/lib/dockershim \
 /var/lib/kubelet \
 /etc/cni \
@@ -112,11 +106,11 @@ sudo rm -rf \
 /etc/kubernetes  \
 /var/run/kubernetes \
 ~/.kube/* \
-/run/containerd \
 /usr/local/bin/kube* \
-/usr/local/bin/container* \
-/usr/local/bin/ctr \
+\
 /usr/local/bin/crictl
+
+# containerd
 
 crictl -v
 ctr -v

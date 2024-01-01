@@ -2,6 +2,8 @@
 
 set -x
 
+# CNI: Container Network Interface 是 Kubernetes 用来委托网络配置的插件层
+
 # 访问https://github.com/containernetworking/plugins/releases 获取 CNI_PLUGINS_VERSION 的版本号
 CNI_PLUGINS_VERSION="v1.4.0"
 ARCH="amd64"

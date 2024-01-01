@@ -1,6 +1,14 @@
 #!/bin/sh
 set -x
 
+# 删除之前的
+rm -rf /opt/containerd/
+rm -rf /home/containerd
+rm -rf /etc/containerd/
+rm -rf /etc/systemd/system/containerd.service
+rm -rf /etc/modules-load.d/containerd.conf
+rm -rf /etc/sysctl.d/99-kubernetes-cri.conf
+
 export VERSION="1.7.11"
 mkdir -p /home/containerd
 cd /home/containerd
@@ -37,7 +45,7 @@ EOF
 
 systemctl daemon-reload
 
-systemctl start containerd
+systemctl restart containerd
 systemctl enable containerd
 #systemctl status containerd
 

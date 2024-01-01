@@ -60,14 +60,6 @@ sudo ufw allow 10257/tcp
 sudo ufw allow 10250/tcp
 sudo ufw allow 30000:32767/tcp
 
-# 设置控制节点与工作节点
-export master_node_152="192.168.2.152"
-export worker_node_155="192.168.2.155"
-export worker_node_160="192.168.2.160"
-export worker_node_100="192.168.2.100"
-export worker_node_101="192.168.2.101"
-export worker_node_102="192.168.2.102"
-
 #  时间同步
 apt install ntpdate -y # Ubuntu
 ntpdate time.windows.com
@@ -77,25 +69,35 @@ ntpdate time.windows.com
 # 少数情况下, 系统可能没有安装runc或者配置不正确
 apt install -y runc
 
-# 修改Hosts
-cat > /etc/hosts << EOF
-# The following lines are desirable for IPv6 capable hosts
-::1     ip6-localhost ip6-loopback
-fe00::0 ip6-localnet
-ff00::0 ip6-mcastprefix
-ff02::1 ip6-allnodes
-ff02::2 ip6-allrouters
-127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
-::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
-$master_node_152 master-node-152
-$worker_node_155 worker-node-155
-$worker_node_160 worker-node-160
-$worker_node_100 worker-node-100
-$worker_node_101 worker-node-101
-$worker_node_102 worker-node-102
-EOF
+# 设置控制节点与工作节点
+export node_152="192.168.2.152"
+export node_155="192.168.2.155"
+export node_160="192.168.2.160"
+export node_100="192.168.2.100"
+export node_101="192.168.2.101"
+export node_102="192.168.2.102"
 
-# systemd-resolved
+# 修改Hosts
+#cat > /etc/hosts << EOF
+## The following lines are desirable for IPv6 capable hosts
+#::1     ip6-localhost ip6-loopback
+#fe00::0 ip6-localnet
+#ff00::0 ip6-mcastprefix
+#ff02::1 ip6-allnodes
+#ff02::2 ip6-allrouters
+#127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+#::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+#$node_152 node-152
+#$node_155 node-155
+#$node_160 node-160
+#$node_100 node-100
+#$node_101 node-101
+#$node_102 node-102
+#EOF
+
+cat /etc/hosts
+
+#systemd-resolved
 systemctl restart systemd-resolved
 #systemctl status systemd-resolved
 
@@ -133,6 +135,7 @@ sleep 4
 
 # Apply sysctl params without reboot
 sudo sysctl --system
+sysctl net.bridge.bridge-nf-call-iptables net.bridge.bridge-nf-call-ip6tables net.ipv4.ip_forward
 
 # 通过运行以下命令验证是否加载了`br_netfilter`，`overlay`模块：
 ehco "通过运行以下命令验证是否加载了`br_netfilter`，`overlay`模块"
@@ -168,8 +171,5 @@ sleep 4
 echo "blkid | grep swap: 为空就正常"
 sudo blkid | grep swap
 sleep 4
-
-lsmod | grep br_netfilter
-lsmod | grep overlay
 
 set +x
