@@ -11,17 +11,19 @@ bootstrapTokens:
       - authentication # 用于身份验证
 localAPIEndpoint:
   # masterIP 主节点用于广播的地址
-  advertiseAddress: 192.168.2.155
+  advertiseAddress: 192.168.2.152
   # Kubernetes API 服务器监听的端口
   bindPort: 6443
 nodeRegistration:
-  name: "node-155" # 该控制节点的名称, 也就是出现在kubectl get no的名称
+  name: "node-152" # 该控制节点的名称, 也就是出现在kubectl get no的名称
   # CRI（容器运行时接口）的通信 socket 用来读取容器运行时的信息。 此信息会被以注解的方式添加到 Node API 对象至上，用于后续用途。
   criSocket: unix:///var/run/containerd/containerd.sock
   # 镜像拉取策略。 这两个字段的值必须是 "Always"、"Never" 或 "IfNotPresent" 之一。 默认值是 "IfNotPresent"，也是添加此字段之前的默认行为
   imagePullPolicy: IfNotPresent
   # 定 Node API 对象被注册时要附带的污点。 若未设置此字段（即字段值为 null），默认为控制平面节点添加控制平面污点。 如果你不想污染你的控制平面节点，可以将此字段设置为空列表
-  taints: null
+  taints:
+  - effect: PreferNoSchedule
+    key: node-role.kubernetes.io/master
   # 提供一组在当前节点被注册时可以忽略掉的预检错误。 例如：IsPrevilegedUser,Swap。 取值 all 忽略所有检查的错误。
   #ignorePreflightErrors:
   #  - IsPrivilegedUser
@@ -44,6 +46,12 @@ apiServer:
     - "node-101"
     - 192.168.2.102
     - "node-102"
+    - lookeke.cc
+    - lookeke.cn
+    - lookeke.com
+    - lookeke.top
+    - 42.194.146.175
+    - 8.141.10.44
   extraArgs:
     # API 服务器的授权模式
     authorization-mode: Node,RBAC
@@ -87,7 +95,8 @@ etcd:
 #   caFile: "/etcd/kubernetes/pki/etcd/etcd-ca.crt"
 #   certFile: "/etcd/kubernetes/pki/etcd/etcd.crt"
 #   keyFile: "/etcd/kubernetes/pki/etcd/etcd.key"
-imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers # 镜像源
+#imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers # 镜像源
+imageRepository: registry.aliyuncs.com/google_containers # 镜像源
 # 为控制面设置一个稳定的 IP 地址或 DNS 名称。
 # 取值可以是一个合法的 IP 地址或者 RFC-1123 形式的 DNS 子域名，二者均可以带一个 可选的 TCP 端口号。
 # 如果 controlPlaneEndpoint 未设置，则使用 advertiseAddress + bindPort。 如果设置了 controlPlaneEndpoint，但未指定 TCP 端口号，则使用 bindPort。
@@ -95,7 +104,7 @@ imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers # 镜像源
 # 在一个包含不止一个控制面实例的集群中，该字段应该设置为放置在控制面 实例之前的外部负载均衡器的地址。
 # 在带有强制性节点回收的环境中，controlPlaneEndpoint 可以用来 为控制面设置一个稳定的 DNS。
 # 负载均衡地址或者master的主机
-controlPlaneEndpoint: "192.168.2.155:6443"
+controlPlaneEndpoint: "192.168.2.152:6443"
 # 其中包含集群的网络拓扑配置。使用这一部分可以定制 Pod 的 子网或者 Service 的子网。
 networking:
   # Kubernetes 服务所使用的的 DNS 域名。 默认值为 "cluster.local"。
@@ -109,9 +118,9 @@ scheduler: {}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
-#address: "192.168.2.155"
-#port: 20250
-serializeImagePulls: false
+#address: "192.168.2.155" # kubelet 将在 192.168.0.8 IP 地址上提供服务
+port: 20250 # kubelet 将在 20250 端口上提供服务
+serializeImagePulls: true # 并行拉取镜像, 默认值false
 # kubelet 将在以下情况之一驱逐 Pod:
 evictionHard:
   # 可用内存低于设定的值时
@@ -124,9 +133,13 @@ evictionHard:
 # 是 kubelet 用来操控宿主系统上控制组（CGroup） 的驱动程序（cgroupfs 或 systemd）
 # 当 systemd 是初始化系统时， 不 推荐使用 cgroupfs 驱动，因为 systemd 期望系统上只有一个 cgroup 管理器。
 # 此外，如果你使用 cgroup v2， 则使用systemd值
-cgroupDriver: "systemd"
----
-# https://github.com/kubernetes/kubernetes/blob/master/pkg/proxy/ipvs/README.md
-apiVersion: kubeproxy.config.k8s.io/v1alpha1
-kind: KubeProxyConfiguration
-mode: ipvs
+cgroupDriver: systemd
+# 给kubelet启用swap
+#failSwapOn: false
+memorySwap: # https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/
+  swapBehavior: UnlimitedSwap # https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-MemorySwapConfiguration
+#---
+## https://github.com/kubernetes/kubernetes/blob/master/pkg/proxy/ipvs/README.md
+#apiVersion: kubeproxy.config.k8s.io/v1alpha1
+#kind: KubeProxyConfiguration
+#mode: ipvs

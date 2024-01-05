@@ -27,6 +27,7 @@ rm -rf /etc/crictl.yaml
 # configfile
 rm -rf /etc/modules-load.d/k8s.conf
 rm -rf /etc/modules-load.d/ipvs.conf
+rm -rf /lib/systemd/system/kube*
 
 # service
 rm -rf /etc/systemd/system/kube*
@@ -49,6 +50,12 @@ sudo apt-mark unhold kubectl
 sudo apt remove -y kubeadm kubelet kubectl
 
 rm -rf /etc/apt/keyrings/*
+rm -rf /usr/lib/systemd/system/kubelet.service
+rm -rf /usr/lib/systemd/system/kubelet.service.d
+
+# 清理旧的安装信息
+which kubeadm kubelet kubectl
+hash -r
 
 # 自动删除不需要的依赖项：
 #sudo apt autoremove -y
@@ -107,14 +114,13 @@ sudo rm -rf \
 /var/run/kubernetes \
 ~/.kube/* \
 /usr/local/bin/kube* \
-\
-/usr/local/bin/crictl
-
-# containerd
+/usr/local/bin/crictl \
+/etc/sysconfig/kubelet \
+/etc/kubernetes
 
 crictl -v
 ctr -v
 socat -h
 runc -h
 conntrack -h
-ipvsadm -h
+#ipvsadm -h

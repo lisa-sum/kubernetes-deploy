@@ -15,4 +15,7 @@ rm -rf /var/lib/containerd
 rm -rf sudo apt remove -y containerd
 rm -rf /usr/local/bin/ctr
 
+which containerd
+hash -r
+
 set +x

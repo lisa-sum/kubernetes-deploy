@@ -14,8 +14,11 @@ sudo apt remove -y kubeadm kubelet kubectl
 sudo apt remove -y containerd
 rm -rf /usr/local/bin/kube*
 rm -rf /usr/bin/kube*
-rm -rf /etc/systemd/system/kube*
+rm -rf /etc/systemd/system/kubelet.service.d
 rm -rf /var/lib/kube*
+rm -rf /etc/sysconfig/kubelet
+rm -rf /etc/kubernetes
+rm -rf /etc/sysctl.d/99-kubernetes-cri.conf
 
 # 安装 kubeadm、kubelet
 # https://kubernetes.io/zh-cn/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
@@ -25,7 +28,11 @@ cd "$DOWNLOAD_HOME" || exit
 
 RELEASE="$(curl -sSL https://dl.k8s.io/release/stable.txt)"
 ARCH="amd64"
+#ARCH="arm64"
 
+# https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubeadm
+# https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubelet
+# https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl
 sudo curl -LO "https://dl.k8s.io/release/${RELEASE}/bin/linux/${ARCH}/{kubeadm,kubeadm.sha256}"
 if echo "$(cat kubeadm.sha256) kubeadm" | sha256sum -c; then
   echo "kubeadm 的SHA256 校验成功"
@@ -53,7 +60,6 @@ fi
 echo "kubectl 的SHA256 校验成功"
 DOWNLOAD_DIR="/usr/local/bin"
 sudo install -o root -g root -m 0755 kubectl $DOWNLOAD_DIR/kubectl
-
 
 # 并添加 kubelet 系统服务
 # 查看 https://github.com/kubernetes/release/tree/master 获取RELEASE_VERSION的版本号
@@ -84,6 +90,9 @@ fi
 # [Install]
 # WantedBy=multi-user.target
 
+DOWNLOAD_DIR="/usr/bin"
+rm -rf /usr/lib/systemd/system/kubelet.service
+rm -rf /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
 if ! wget -q "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/krel/templates/latest/kubelet/kubelet.service"; then
   echo "下载失败, 正在使用内置的文件进行替换, 但可能不是最新的, 可以进行手动替换"
   cat > /etc/systemd/system/kubelet.service <<EOF
@@ -94,7 +103,7 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-ExecStart=$DOWNLOAD_HOME/kubelet
+ExecStart=$DOWNLOAD_DIR/kubelet
 Restart=always
 StartLimitInterval=0
 RestartSec=10
@@ -120,6 +129,7 @@ if [ -f "$DOWNLOAD_HOME/10-kubeadm.conf" ]; then
     rm $DOWNLOAD_HOME/kubelet.service
 fi
 
+DOWNLOAD_DIR="/usr/bin"
 sudo mkdir -p /etc/systemd/system/kubelet.service.d
 if ! wget -q "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/krel/templates/latest/kubeadm/10-kubeadm.conf"; then
   echo "下载失败, 正在使用内置的文件进行替换, 但可能不是最新的, 可以进行手动替换"
@@ -142,19 +152,22 @@ else
   sudo cp 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 fi
 
-#!/bin/sh
-
-# 执行第一个任务
-
-# 查看是否生效
+# 配置 cgroup 驱动与CRI一致
+cp /etc/sysconfig/kubelet{,.back}
+cat > /etc/sysconfig/kubelet <<EOF
+KUBELET_EXTRA_ARGS="--cgroup-driver=systemd"
+EOF
 
 cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sleep 3
+cat /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+# 清理旧的安装信息
+which kubeadm kubelet kubectl
+hash -r
 
 systemctl daemon-reload
 
 systemctl enable --now kubelet
-systemctl enable kubelet
 systemctl status kubelet
 
 systemctl enable kubeadm
@@ -166,83 +179,8 @@ kubeadm version
 kubelet --version
 kubectl version --client
 
-echo $DOWNLOAD_HOME
-rm -rf "$DOWNLOAD_HOME"/kubeadm
-rm -rf "$DOWNLOAD_HOME"/kubeadm.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet
-rm -rf "$DOWNLOAD_HOME"/kubelet.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet.service
-rm -rf "$DOWNLOAD_HOME"/kubectl
-rm -rf "$DOWNLOAD_HOME"/kubectl.sha256
-
-
 # 查看版本的详细视图
 # kubectl version --client --output=yaml
-
-kubeadm config images list
-
-# ctr images pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.29.0
-# ctr images pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-controller-manager:v1.29.0
-# ctr images pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler:v1.29.0
-# ctr images pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy:v1.29.0
-# ctr images pull registry.cn-hangzhou.aliyuncs.com/google_containers/coredns/coredns:v1.11.1
-# ctr images pull registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9
-# ctr images pull registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.5.10-0
-
-# crictl pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.29.0
-# crictl pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-controller-manager:v1.29.0
-# crictl pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler:v1.29.0
-# crictl pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy:v1.29.0
-# crictl pull registry.k8s.io/coredns/coredns:v1.11.1
-# crictl pull registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.9
-# crictl pull registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.5.10-0
-
-ls /var/run/containerd/
-ls /run/containerd/
-
-
-# 预检
-netstat -tuln | grep 6443
-netstat -tuln | grep 10259
-netstat -tuln | grep 10257
-
-lsof -i:6443 -t
-lsof -i:10259 -t
-lsof -i:10257 -t
-
-if kubeadm init phase preflight --dry-run --config kubeadm-init-conf.yaml; then
-  echo "预检成功"
-  # 安装
-  kubeadm init \
-  --config=kubeadm-init-conf.yaml \
-  --v=7
-else
-  echo "命令执行失败"
-  kubeadm reset -f
-fi
-
-mkdir -p "$HOME"/.kube
-sudo cp -i /etc/kubernetes/admin.conf "$HOME"/.kube/config
-sudo chown "$(id -u)":"$(id -g)" "$HOME"/.kube/config
-
-# 或者自动化: https://kubernetes.io/zh-cn/docs/reference/setup-tools/kubeadm/kubeadm-init/#automating-kubeadm
-kubeadm token generate
-kubeadm certs certificate-key
-
-cat > kubeadm-join.yaml <<EOF
-apiVersion: kubeadm.k8s.io/v1beta2
-kind: JoinConfiguration
-discovery:
-  bootstrapToken:
-    token: "9a08jv.c0izixklcxtmnze7"
-    apiServerEndpoint: "192.168.2.152:6443"
-    caCertHashes:
-      - "sha256:e462571f0388602594f1abdbee04f8834e5d967008cde03d67865fbe0bd6dfde"
-nodeRegistration:
-  name: "worker-node-155"
-  criSocket: "/var/run/containerd/containerd.sock"
-EOF
-
 
 # 注意：如果 ipvs 模式成功打开，您应该会看到 IPVS 代理规则（使用 ipvsadm ），例如
 # ipvsadm -ln
@@ -258,5 +196,14 @@ EOF
 # 虽然没有 IPVS 代理规则或出现以下日志，但表明 kube-proxy 无法使用 IPVS 模式：
 # Can't use ipvs proxier, trying iptables proxier
 # Using iptables Proxier.
+
+echo $DOWNLOAD_HOME
+rm -rf "$DOWNLOAD_HOME"/kubeadm
+rm -rf "$DOWNLOAD_HOME"/kubeadm.sha256
+rm -rf "$DOWNLOAD_HOME"/kubelet
+rm -rf "$DOWNLOAD_HOME"/kubelet.sha256
+rm -rf "$DOWNLOAD_HOME"/kubelet.service
+rm -rf "$DOWNLOAD_HOME"/kubectl
+rm -rf "$DOWNLOAD_HOME"/kubectl.sha256
 
 set +x

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # 删除之前的
-/etc/crictl.yaml
+rm -rf /etc/crictl.yaml
 
 export CRICTL_VERSION="v1.29.0"
 export ARCH="amd64"
@@ -18,7 +18,8 @@ timeout: 10
 debug: false
 EOF
 
-systemctl restart containerd
+# 使用crictl测试一下，确保可以打印出版本信息并且没有错误信息输出
+crictl --runtime-endpoint=unix:///run/containerd/containerd.sock  version
 
 cat /etc/crictl.yaml
 # 输出版本

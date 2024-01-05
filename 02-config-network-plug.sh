@@ -105,7 +105,7 @@ curl -LO https://github.com/cilium/cilium/archive/main.tar.gz
 #--set hubble.ui.Frontend.Image.Tag=v0.9.0 \
 
 # annotateK8sNode: 在初始化时使用 Cilium 的元数据注释 k8s 节点。
-# sctp.enabled: 启用 SCTP 支持。注意:目前，SCTP 支持不支持重写端口或多宿主。
+# sctp.enabled: 启用 SCTP 支持。注意:目前，SCTP 支持不支持重写端口或多宿主。SCTP（Stream Control Transmission Protocol）是一种传输层协议，它提供了可靠的、面向消息的、多路复用的传输。SCTP 最初是为了在电话网络中传输信令信息而设计的，但现在也被广泛用于 IP 网络中。SCTP 具有许多优点，包括提供了比 TCP 更好的消息边界保护、抗拒绝服务攻击（DoS）的能力以及多宿主连接。SCTP 还支持多条流，这使得它非常适合于一些需要同时传输多个消息的应用程序
 # kubeProxyReplacementHealthzBindAddr: healthz 服务器绑定地址，用于 kube-proxy 替换。若要启用，请将所有 ipv4 地址的值设置为“0.0.0.0:10256”，将所有 ipv6 地址的值设置为“[::]:10256”。默认情况下，它处于禁用状态。
 # k8sServiceHost: Kubernetes 服务主机
 # k8sservicePort: 端口
