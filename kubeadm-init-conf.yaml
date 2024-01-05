@@ -6,9 +6,9 @@ bootstrapTokens:
       - system:bootstrappers:kubeadm:default-node-token
     token: "9a08jv.c0izixklcxtmnze7"
     ttl: 24h0m0s # 令牌的有效期限
-    usages:
-      - signing # 用于签名请求
-      - authentication # 用于身份验证
+#    usages:
+#      - signing # 用于签名请求
+#      - authentication # 用于身份验证
 localAPIEndpoint:
   # masterIP 主节点用于广播的地址
   advertiseAddress: 192.168.2.152
@@ -79,7 +79,7 @@ dns: {}
 etcd:
   local:
     # etcd 数据存储目录
-    dataDir: /var/lib/etcd
+#    dataDir: /var/lib/etcd
 #    imageRepository: "registry.k8s.io"
 #    imageTag: "3.2.24"
 #    extraArgs:
@@ -119,7 +119,7 @@ scheduler: {}
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 #address: "192.168.2.155" # kubelet 将在 192.168.0.8 IP 地址上提供服务
-port: 20250 # kubelet 将在 20250 端口上提供服务
+#port: 20250 # kubelet 将在 20250 端口上提供服务
 serializeImagePulls: true # 并行拉取镜像, 默认值false
 # kubelet 将在以下情况之一驱逐 Pod:
 evictionHard:
@@ -134,12 +134,3 @@ evictionHard:
 # 当 systemd 是初始化系统时， 不 推荐使用 cgroupfs 驱动，因为 systemd 期望系统上只有一个 cgroup 管理器。
 # 此外，如果你使用 cgroup v2， 则使用systemd值
 cgroupDriver: systemd
-# 给kubelet启用swap
-#failSwapOn: false
-memorySwap: # https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/
-  swapBehavior: UnlimitedSwap # https://kubernetes.io/zh-cn/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-MemorySwapConfiguration
-#---
-## https://github.com/kubernetes/kubernetes/blob/master/pkg/proxy/ipvs/README.md
-#apiVersion: kubeproxy.config.k8s.io/v1alpha1
-#kind: KubeProxyConfiguration
-#mode: ipvs
