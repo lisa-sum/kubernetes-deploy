@@ -19,8 +19,9 @@ debug: false
 EOF
 
 # 使用crictl测试一下，确保可以打印出版本信息并且没有错误信息输出
-crictl --runtime-endpoint=unix:///run/containerd/containerd.sock  version
+crictl --runtime-endpoint=unix:///run/containerd/containerd.sock version
 
 cat /etc/crictl.yaml
+
 # 输出版本
 crictl -v

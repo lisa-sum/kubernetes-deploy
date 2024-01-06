@@ -79,13 +79,4 @@ kubectl version --client
 # Can't use ipvs proxier, trying iptables proxier
 # Using iptables Proxier.
 
-echo $DOWNLOAD_HOME
-rm -rf "$DOWNLOAD_HOME"/kubeadm
-rm -rf "$DOWNLOAD_HOME"/kubeadm.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet
-rm -rf "$DOWNLOAD_HOME"/kubelet.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet.service
-rm -rf "$DOWNLOAD_HOME"/kubectl
-rm -rf "$DOWNLOAD_HOME"/kubectl.sha256
-
 set +x

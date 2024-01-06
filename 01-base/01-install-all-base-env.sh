@@ -5,8 +5,6 @@ set -x
 # 验证每个节点的 MAC 地址和product_uuid是否唯一](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#verify-mac-address
 sudo cat /sys/class/dmi/id/product_uuid
 
-#sleep 4
-
 # 设置为静态路由
 # Ubuntu示例:
 #cp /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.back
@@ -23,7 +21,8 @@ sudo cat /sys/class/dmi/id/product_uuid
 #        - 192.168.2.152/24
 #      nameservers: # 用于指定DNS服务器地址的部分
 #          addresses: # 列出DNS服务器的IP地址
-#            - 192.168.0.6
+#            - 114.114.114.114
+#            #- 192.168.0.6
 #      routes: # 配置静态路由
 #          - to: default # 目标网络地址，default 表示默认路由
 #            via: 192.168.2.1 # 指定了路由数据包的下一跳地址，192.168.2.1 表示数据包将通过该地址进行路由
@@ -83,13 +82,12 @@ cat /etc/hosts
 
 # systemd-resolved
 systemctl restart systemd-resolved
-systemctl status systemd-resolved
+#systemctl status systemd-resolved
 
 # 关闭SELinux
 sudo setenforce 0 # 临时禁用, 重启变回
 sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config # 禁用
 sestatus
-#sleep 4
 
 # SWAP分区,
 # kubelet 的默认行为是: 如果在节点上检测到交换内存，则无法启动。自 v1.22 起支持 Swap。
@@ -144,7 +142,6 @@ sysctl -p /etc/sysctl.d/99-kubernetes-cri.conf
 ehco "通过运行以下命令验证是否加载了`br_netfilter`，`overlay`模块"
 lsmod | grep br_netfilter
 lsmod | grep overlay
-#sleep 4
 
 # IPVS 待测试
 #apt install ipset ipvsadm -y
@@ -180,18 +177,14 @@ lsmod | grep overlay
 #
 #lsmod | grep -e ip_vs -e nf_conntrack
 #cut -f1 -d " "  /proc/modules | grep -e ip_vs -e nf_conntrack
-#sleep 4
 
-echo "/etc/sysctl.d/k8s.conf:"
-cat /etc/sysctl.d/k8s.conf
-#sleep 4
+echo "/etc/sysctl.d/99-kubernetes-cri.conf:"
+cat /etc/sysctl.d/99-kubernetes-cri.conf
 
 echo "/etc/modules-load.d/k8s.conf:"
 cat /etc/modules-load.d/k8s.conf
-#sleep 4
 
 echo "blkid | grep swap: 为空就正常"
 sudo blkid | grep swap
-#sleep 4
 
 set +x

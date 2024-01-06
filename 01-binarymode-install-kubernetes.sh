@@ -159,7 +159,6 @@ KUBELET_EXTRA_ARGS="--cgroup-driver=systemd"
 EOF
 
 cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-cat /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
 
 # 清理旧的安装信息
 which kubeadm kubelet kubectl
@@ -169,9 +168,6 @@ systemctl daemon-reload
 
 systemctl enable --now kubelet
 systemctl status kubelet
-
-systemctl enable kubeadm
-systemctl status kubeadm
 
 systemctl restart containerd
 
@@ -196,14 +192,5 @@ kubectl version --client
 # 虽然没有 IPVS 代理规则或出现以下日志，但表明 kube-proxy 无法使用 IPVS 模式：
 # Can't use ipvs proxier, trying iptables proxier
 # Using iptables Proxier.
-
-echo $DOWNLOAD_HOME
-rm -rf "$DOWNLOAD_HOME"/kubeadm
-rm -rf "$DOWNLOAD_HOME"/kubeadm.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet
-rm -rf "$DOWNLOAD_HOME"/kubelet.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet.service
-rm -rf "$DOWNLOAD_HOME"/kubectl
-rm -rf "$DOWNLOAD_HOME"/kubectl.sha256
 
 set +x

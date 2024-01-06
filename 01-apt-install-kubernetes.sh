@@ -14,16 +14,17 @@ sudo apt remove -y kubeadm kubelet kubectl
 sudo apt remove -y containerd
 rm -rf /usr/local/bin/kube*
 rm -rf /usr/bin/kube*
-rm -rf /etc/systemd/system/kubelet.service.d
 rm -rf /var/lib/kube*
 rm -rf /etc/sysconfig/kubelet
 rm -rf /etc/kubernetes
-rm -rf /etc/sysctl.d/99-kubernetes-cri.conf
+rm -rf /etc/apt/sources.list.d/kubernetes.list
+rm -rf /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
 
 # 安装 kubeadm、kubelet
 apt install -y apt-transport-https
 export VERSION="v1.29"
-echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$VERSION/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$VERSION/deb/ /" \
+| sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 mkdir -p /etc/apt/keyrings/
 curl -fsSL https://pkgs.k8s.io/core:/stable:/$VERSION/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
@@ -32,16 +33,14 @@ apt update
 
 apt install -y kubelet kubeadm kubectl
 
-sudo systemctl enable --now kubelet
-
 # 配置 cgroup 驱动与CRI一致
 cp /etc/sysconfig/kubelet{,.back}
 cat > /etc/sysconfig/kubelet <<EOF
 KUBELET_EXTRA_ARGS="--cgroup-driver=systemd"
 EOF
 
-cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 cat /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+cat /etc/sysconfig/kubelet
 
 # 清理旧的安装信息
 which kubeadm kubelet kubectl
@@ -50,10 +49,7 @@ hash -r
 systemctl daemon-reload
 
 systemctl enable --now kubelet
-systemctl status kubelet
-
-systemctl enable kubeadm
-systemctl status kubeadm
+#systemctl status kubelet
 
 systemctl restart containerd
 
@@ -78,14 +74,5 @@ kubectl version --client
 # 虽然没有 IPVS 代理规则或出现以下日志，但表明 kube-proxy 无法使用 IPVS 模式：
 # Can't use ipvs proxier, trying iptables proxier
 # Using iptables Proxier.
-
-echo $DOWNLOAD_HOME
-rm -rf "$DOWNLOAD_HOME"/kubeadm
-rm -rf "$DOWNLOAD_HOME"/kubeadm.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet
-rm -rf "$DOWNLOAD_HOME"/kubelet.sha256
-rm -rf "$DOWNLOAD_HOME"/kubelet.service
-rm -rf "$DOWNLOAD_HOME"/kubectl
-rm -rf "$DOWNLOAD_HOME"/kubectl.sha256
 
 set +x

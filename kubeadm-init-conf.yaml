@@ -27,8 +27,8 @@ nodeRegistration:
   # 提供一组在当前节点被注册时可以忽略掉的预检错误。 例如：IsPrevilegedUser,Swap。 取值 all 忽略所有检查的错误。
   #ignorePreflightErrors:
   #  - IsPrivilegedUser
-  #skipPhases: # 是命令执行过程中要略过的阶段（Phases）。 通过执行命令 kubeadm init --help 可以获得阶段的列表。 参数标志 "--skip-phases" 优先于此字段的设置
-  #- addon/kube-proxy # 忽略kube-proxy, 许多CNI网络插件都可以代替kube-proxy的功能, 此时可以省略, 除非你真的很懂, 否则不要跳过
+skipPhases: # 是命令执行过程中要略过的阶段（Phases）。 通过执行命令 kubeadm init --help 可以获得阶段的列表。 参数标志 "--skip-phases" 优先于此字段的设置
+  - addon/kube-proxy # 忽略kube-proxy, 许多CNI网络插件都可以代替kube-proxy的功能, 此时可以省略, 除非你真的很懂, 否则不要跳过
 ---
 apiServer:
   # certSANs 设置 API 服务器签署证书所用的额外主题替代名（Subject Alternative Name，SAN）。

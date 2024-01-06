@@ -21,9 +21,6 @@ systemctl stop kubeadm
 systemctl stop kubelet
 systemctl stop kubectl
 
-rm -rf /etc/sysctl.d/k8s.conf
-rm -rf /etc/crictl.yaml
-
 # configfile
 rm -rf /etc/modules-load.d/k8s.conf
 rm -rf /etc/modules-load.d/ipvs.conf

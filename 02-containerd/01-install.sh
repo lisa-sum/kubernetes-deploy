@@ -92,10 +92,12 @@ sudo sysctl --system
 
 systemctl daemon-reload
 systemctl enable containerd --now
-systemctl status containerd
+#systemctl status containerd
 
 # 校验配置文件
 grep -nE "sandbox_image|SystemdCgroup" /etc/containerd/config.toml
+
+cat /etc/modules-load.d/containerd.conf
 
 ctr -v
 
