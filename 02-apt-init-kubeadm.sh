@@ -32,6 +32,12 @@ lsof -i:6443 -t
 lsof -i:10259 -t
 lsof -i:10257 -t
 
+# ARP, 适用于云下没有LoadBalancer支持的集群, 可选, 与purelb使用
+cat <<EOF | sudo tee /etc/sysctl.d/k8s_arp.conf
+net.ipv4.conf.all.arp_ignore=1
+net.ipv4.conf.all.arp_announce=2
+EOF
+
 mkdir -p /etc/kubernetes/manifests
 if kubeadm init phase preflight --dry-run --config kubeadm-init-conf.yaml; then
   echo "预检成功"
